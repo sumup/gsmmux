@@ -1,12 +1,13 @@
 # Comment/uncomment the following line to disable/enable debugging
-DEBUG = y
+#DEBUG = y
 
 TARGET = gsmMuxd
 SRC = gsm0710.c buffer.c
 OBJS = gsm0710.o buffer.o
 
-CC = gcc
-LD = gcc
+#get these from build scripts
+#CC = gcc 
+#LD = CC
 CFLAGS = -Wall
 LDLIBS = -lm
 
