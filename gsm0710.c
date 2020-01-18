@@ -608,8 +608,10 @@ void setAdvancedOptions(int fd, speed_t baud) {
 
     // Enable the receiver and set local mode and 8N1
     options.c_cflag = (CLOCAL | CREAD | CS8 | HUPCL);
+    // U Blox recommends to enable the hardware flow control
+    // refer 1.1.1 https://www.u-blox.com/sites/default/files/products/documents/MuxImplementation_ApplicationNote_%28UBX-13001887%29.pdf
     // enable hardware flow control (CNEW_RTCCTS)
-    // options.c_cflag |= CRTSCTS;
+    options.c_cflag |= CRTSCTS;
     // Set speed
     options.c_cflag |= baud;
 
@@ -691,8 +693,10 @@ int open_serialport(char *dev)
 			options.c_cflag &= ~CSIZE;
 			options.c_cflag |= CS8;
 
+            // U Blox recommends to enable the hardware flow control
+            // refer 1.1.1 https://www.u-blox.com/sites/default/files/products/documents/MuxImplementation_ApplicationNote_%28UBX-13001887%29.pdf
 			// enable hardware flow control (CNEW_RTCCTS)
-			// options.c_cflag |= CRTSCTS;
+			 options.c_cflag |= CRTSCTS;
 
 			// set raw input
 			options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
@@ -1279,14 +1283,20 @@ int initIRZ52IT()
  */
 int initGeneric()
 {
-	char mux_command[20] = "AT+CMUX=0\r\n";
+    /* By default value of frame szie is 31, which makes the larger frames
+     * getting dropped. Ublox AT command https://www.u-blox.com/sites/default/files/u-blox-CEL_ATCommands_%28UBX-13002752%29.pdf section 3.1.3 supported value is 1-1509. We can safely use 1500 */
+	char mux_command[20] = "AT+CMUX=0,0,,1500\r\n";
+    /*Its recomended to set baudrate before CMUX command */
+	char baud_command[] = "AT+IPR=115200\r\n";
     unsigned char close_mux[2] = { C_CLD | CR, 1 };
 
     int baud = indexOfBaud(baudrate);
     if (baud != 0) {
         // Setup the speed explicitly, if given
-        sprintf(mux_command, "AT+CMUX=0,0,%d\r\n", baud);
+        sprintf(baud_command, "AT+IPR=%d\r\n", baudrate);
     }
+
+    at_command(serial_fd, baud_command, 10000);
 
 	/**
 	 * Modem Init for Siemens Generic like Sony
